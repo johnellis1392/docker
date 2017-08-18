@@ -1,0 +1,65 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  # config.vm.box = "debian/jessie64"
+  # config.vm.box = 'hashicorp/precise32'
+  # config.vm.box = 'ubuntu/xenial64'
+  config.vm.box = 'ubuntu/trusty64'
+  # config.vm.host_name = 'dev'
+
+  # Create new user
+  # , privileged: true
+  config.vm.provision 'shell', privileged: true, inline: <<-SHELL
+    # useradd -m dev --groups sudo
+    # su -c "printf 'cd /home/dev\nsudo su dev' >> .bash_profile" -s /bin/sh vagrant
+
+	# Get docker & docker-compose
+	# Look at this:
+	# https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-compose-on-ubuntu-14-04
+	sudo wget https://get.docker.com | sh
+  SHELL
+
+
+  # Copy local docker files
+  config.vm.provision 'file', source: './Dockerfile', destination: '~/Dockerfile'
+  config.vm.provision 'file', source: './docker-compose.yaml', destination: '~/docker-compose.yaml'
+
+  # Configure ssh
+  # config.ssh.host = '...'
+  # config.ssh.password = '...'
+  # config.ssh.port = '...'
+  # config.ssh.forward_agent = true
+
+  # Make synched folder
+  # config.vm.synced_folder './directory', '/home/vagrant/directory'
+
+  # Run a bunch of shell commands
+  # config.vm.provision 'shell', inline: <<-SHELL
+  #   cd /home/vagrant
+  #   apt-get update
+  #   apt-get install -y docker.io
+  #   apt-get install -y xorg-x11-drivers
+  # SHELL
+
+  # Startup provisioning
+  # config.vm.provision 'shell', inline: "sudo apt-get update"
+  # config.vm.provision 'shell', inline: "sudo apt-get install -y xfce4 virtualbox-guest-dkms virtualbox-guest-utils virtualbox-guest-x11"
+  # config.vm.provision 'shell', inline: "sudo sed -i 's/allowed_users=.*$/allowed_users=anybody/' /etc/X11/Xwrapper.config"
+
+
+  # Install docker
+  config.vm.provision 'shell', inline: "sudo apt-get update"
+  config.vm.provision 'shell', inline: 'sudo apt-get install -y docker.io'
+
+  # Start graphical environment
+  config.vm.provider :virtualbox do |vb|
+	# Set gui
+	vb.gui = true
+
+	# Upgrade number of monitors
+	vb.customize ['modifyvm', :id, '--monitorcount', '2']
+	vb.memory = '2048'
+  end
+end
+
