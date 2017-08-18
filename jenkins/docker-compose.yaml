@@ -1,0 +1,200 @@
+version: '3.3'
+
+
+# Jenkins docker configuration:
+# https://github.com/jenkinsci/docker/blob/master/README.md
+#
+# Putting Jenkins in a docker container:
+# https://engineering.riotgames.com/news/putting-jenkins-docker-container
+#
+# Installing Jenkins with docker:
+# https://wiki.jenkins.io/display/JENKINS/Installing+Jenkins+with+Docker
+services:
+  gitlab:
+    image: 127.0.0.1:5000/johnellis1392/gitlab
+    # build:
+    #   context: ./gitlab
+    #   dockerfile: Dockerfile
+    deploy:
+      replicas: 1
+
+    # environment:
+      # Additional configuration for stuff
+      # GITLAB_OMNIBUS_CONFIG: |
+      #   external_url 'https://gitlab.celestia.com'
+
+    ports:
+      # HTTP
+      - published: 8080
+        target: 80
+        protocol: tcp
+
+        # Docker port mode options:
+        # * host: Bind to host port
+        # * ingress: Create virtual ingress port for swarm load balancing
+        mode: host
+
+      # HTTPS
+      - published: 8443
+        target: 443
+        protocol: tcp
+        mode: host
+
+      # SSH
+      - published: 8022
+        target: 22
+        protocol: tcp
+        mode: host
+
+      # Unicorn
+      - published: 8081
+        target: 8080
+        protocol: tcp
+        mode: host
+
+
+    volumes:
+      # Configs
+      - type: volume
+        source: gitlab_configs
+        target: /etc/gitlab
+        read_only: false
+        volume:
+          nocopy: true
+
+      # Logs
+      - type: volume
+        source: gitlab_logs
+        target: /var/log/gitlab
+        read_only: false
+        volume:
+          nocopy: true
+
+      # Data
+      - type: volume
+        source: gitlab_data
+        target: /var/opt/gitlab
+        read_only: false
+        volume:
+          nocopy: true
+
+
+
+  jenkins:
+    # image: jenkins/jenkins:alpine
+    image: 127.0.0.1:5000/johnellis1392/jenkins
+    # build:
+    #   context: ./jenkins
+    #   dockerfile: Dockerfile
+    deploy:
+      replicas: 1
+
+      # Setup endpoint discovery for services. Options:
+      # * vip: Allocate virtual ip
+      # * dnsrr: Do dns round-robin service-discovery
+      # endpoint_mode: dnsrr
+
+    ports:
+      - 8080:8080/tcp
+      - 50000:50000/tcp
+
+    environment:
+
+      # Add logging options
+      JAVA_OPTS: '-Djava.util.logging.config.file=/var/jenkins_home/log.properties'
+
+      # Place all jenkins endpoints on /jenkins prefix
+      # Full list of jenkins cli options here:
+      # https://wiki.jenkins.io/display/JENKINS/Starting+and+Accessing+Jenkins
+      #
+      # Also here:
+      # https://jenkins.io/doc/book/managing/cli/
+      JENKINS_OPTS: '--prefix=/jenkins'
+
+      # Port for communicating with slave agents
+      JENKINS_SLAVE_AGENT_PORT: '50000'
+
+
+    volumes:
+      - type: volume
+        source: jenkins_logs
+        target: /var/log/jenkins
+        read_only: false
+
+        # Don't copy pre-existing data from container when mounting volume.
+        volume:
+          nocopy: true
+
+
+    # secrets:
+      # - source: jenkins_password
+      #   # This is the default location for the secret
+      #   # target: /run/secrets/initialAdminPassword
+      #   target: /var/jenkins_home/secrets/initialAdminPassword
+      #   # Jenkins user id
+      #   # uid: '1000'
+      #   uid: '1000'
+      #   gid: '1000'
+      #   mode: 0440
+
+        # - source: jenkins_https_pem
+        #   - target: /var/lib/jenkins/cert
+        #   - uid: '1000'
+        #   - gid: '1000'
+        #   - mode: 0440
+
+        # - source: jenkins_https_key
+        #   - target: /var/lib/jenkins/pk
+        #   - uid: '1000'
+        #   - gid: '1000'
+        #   - mode: 0440
+
+    configs:
+      - source: jenkins_log_properties
+        target: /var/jenkins_home/log.properties
+        uid: '1000'
+        gid: '1000'
+        mode: 0440
+
+
+secrets:
+  jenkins_password:
+    file: ./jenkins/initialAdminPassword
+  jenkins_https_pem:
+    file: ./jenkins/certs/https.pem
+  jenkins_https_key:
+    file: ./jenkins/certs/https.key
+
+
+configs:
+  jenkins_log_properties:
+    file: ./jenkins/jenkins_home/log.properties
+
+
+volumes:
+  jenkins_logs:
+    driver: local
+
+
+  # NOTE: Consider mounting these volumes to a directory like
+  # /srv/gitlab/
+  gitlab_configs:
+    driver: local
+
+  gitlab_logs:
+    driver: local
+
+  gitlab_data:
+    driver: local
+
+
+  # This configuration will bind mount a volume onto the stack
+  # when it's deployed.
+  # jenkins_logs:
+  #   driver: local
+  #   driver_opts:
+  #     o: bind
+  #     type: none
+  #     device: ${PWD}/jenkins
+
+
