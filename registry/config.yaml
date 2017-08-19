@@ -1,0 +1,36 @@
+version: 0.1
+
+log:
+  fields:
+    service: registry
+
+
+storage:
+  cache:
+    blobdescriptor: inmemory
+  filesystem:
+    rootdirectory: /var/lib/registry
+
+  # Enable ability to delete images
+  delete:
+    enabled: true
+
+
+http:
+  addr: :5000
+  headers:
+    X-Content-Type-Options: [nosniff]
+  tls:
+    certificate: /run/secrets/https.crt
+    key: /run/secrets/https.key
+    # clientcas:
+    #   - /run/secrets/https.csr
+
+
+health:
+  storagedriver:
+    enabled: true
+    interval: 10s
+    threshold: 3
+
+

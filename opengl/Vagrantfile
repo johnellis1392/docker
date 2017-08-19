@@ -9,15 +9,21 @@ Vagrant.configure("2") do |config|
   # config.vm.host_name = 'dev'
 
   # Create new user
-  # , privileged: true
   config.vm.provision 'shell', privileged: true, inline: <<-SHELL
-    # useradd -m dev --groups sudo
-    # su -c "printf 'cd /home/dev\nsudo su dev' >> .bash_profile" -s /bin/sh vagrant
-
 	# Get docker & docker-compose
 	# Look at this:
 	# https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-compose-on-ubuntu-14-04
-	sudo wget https://get.docker.com | sh
+
+	sudo apt-get update && sudo apt-get upgrade -y
+
+	sudo curl https://get.docker.com | sh
+	sudo usermod -aG docker vagrant
+
+	sudo apt-get install -y xfce4 xinit
+	sudo apt-get install -y virtualbox-guest-dkms virtualbox-guest-utils virtualbox-guest-x11
+	sudo apt-get autoremove -y
+	#
+	# apt-get install -y xorg-x11-drivers
   SHELL
 
 
@@ -33,14 +39,6 @@ Vagrant.configure("2") do |config|
 
   # Make synched folder
   # config.vm.synced_folder './directory', '/home/vagrant/directory'
-
-  # Run a bunch of shell commands
-  # config.vm.provision 'shell', inline: <<-SHELL
-  #   cd /home/vagrant
-  #   apt-get update
-  #   apt-get install -y docker.io
-  #   apt-get install -y xorg-x11-drivers
-  # SHELL
 
   # Startup provisioning
   # config.vm.provision 'shell', inline: "sudo apt-get update"

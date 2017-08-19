@@ -1,0 +1,72 @@
+version: '3.3'
+
+# Configuration for docker registry.
+# Additional notes on configuring docker registries
+# available here:
+# https://docs.docker.com/registry/configuration/#override-specific-configuration-options
+services:
+  registry:
+    image: registry:latest
+    ports:
+      - 5000:5000/tcp
+
+    deploy:
+      replicas: 1
+
+      # environment:
+
+      # Note: Any environment variables override configurations
+      # from the registry's yaml configuration file. Underscores
+      # in environment variables replace indentatino levels in
+      # the yaml scopes. Read the documentation for a better
+      # explanation of this.
+      # Note: This is not recommended.
+      # REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
+
+    volumes:
+      - image_storage:/var/lib/registry
+
+    secrets:
+      - source: https_key
+        target: /run/secrets/https.key
+        uid: '0'
+        gid: '0'
+        mode: 0440
+
+      - source: https_cert
+        target: /run/secrets/https.crt
+        uid: '0'
+        gid: '0'
+        mode: 0440
+
+    configs:
+      - source: registry_config
+        target: /etc/docker/registry/config.yaml
+        uid: '0'
+        gid: '0'
+        mode: 0440
+
+
+secrets:
+  https_key:
+    file: ./certs/https.key
+  https_cert:
+    file: ./certs/https.crt
+
+
+configs:
+  registry_config:
+    file: ./config.yaml
+
+
+volumes:
+  image_storage:
+    driver: local
+
+    # Uncomment this if you want to save images on the host fs
+    # driver_opts:
+    #   o: bind
+    #   type: none
+    #   device: /var/lib/registry
+      
+
