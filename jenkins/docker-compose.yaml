@@ -12,9 +12,9 @@ version: '3.3'
 services:
   gitlab:
     image: 127.0.0.1:5000/johnellis1392/gitlab
-    # build:
-    #   context: ./gitlab
-    #   dockerfile: Dockerfile
+    build:
+      context: ./gitlab
+      dockerfile: Dockerfile
     deploy:
       replicas: 1
 
@@ -83,9 +83,9 @@ services:
   jenkins:
     # image: jenkins/jenkins:alpine
     image: 127.0.0.1:5000/johnellis1392/jenkins
-    # build:
-    #   context: ./jenkins
-    #   dockerfile: Dockerfile
+    build:
+      context: ./jenkins
+      dockerfile: Dockerfile
     deploy:
       replicas: 1
 
