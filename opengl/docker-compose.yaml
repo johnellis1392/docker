@@ -6,8 +6,11 @@ services:
     environment:
       DISPLAY: unix$DISPLAY
 
-    devices:
-      - /dev/dri
+    # devices:
+    #  - /dev/dri
+
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
 
     entrypoint:
       - glxgears
