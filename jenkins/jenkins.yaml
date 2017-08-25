@@ -1,0 +1,87 @@
+apiVersion: v1beta1
+kind: Deployment
+metadata:
+  name: jenkins
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: jenkins
+        track: stable
+    spec:
+      containers:
+        - name: "jenkins"
+          image: "jenkins/jenkins:alpine"
+          ports:
+            - name: http
+              containerPort: 8080
+            # - name: health
+            # - containerPort: 8081
+          # lifecycle:
+            # preStop:
+              # exec:
+                # command: ["/usr/sbin/jenkins", "-s", "-quit"]
+          resources:
+            limits:
+              cpu: 0.2
+              memory: "10Mi"
+#           livenessProbe:
+#             httpGet:
+#               path: /healthz
+#               port: 8081
+#               scheme: HTTP
+#             initialDelaySeconds: 5
+#             periodSeconds: 15
+#             timeoutSeconds: 5
+#           readinessProbe:
+#             httpGet:
+#               path: /readiness
+#               port: 8081
+#               scheme: HTTP
+#             initialDelaySeconds: 5
+#             timeoutSeconds: 1
+          volumes:
+            - name: "jenkins_logs"
+              mountPath: /var/log/jenkins
+            - name: "jenkins_password"
+              mountPath: /var/jenkins_home/secrets/initialAdminPassword
+            - name: "jenkins_https_pem"
+              mountPath: /var/lib/jenkins/cert
+            - name: "jenkins_https_key"
+              mountPath: /var/lib/jenkins/pk
+
+
+        # Persistent Volumes
+        volumes:
+          - name: "jenkins_logs"
+            hostPath:
+              path: /srv/jenkins/logs
+            # persistentVolumeClaim:
+              # claimName: "jenkins_logs_claim"
+            accessModes:
+              - ReadWriteMany
+            resources:
+              requests:
+                storage: 3Gi
+
+          # Config Maps
+          - name: "jenkins_log_properties"
+            configMap:
+              name: "jenkins_log_properties"
+              items:
+                - key: "log.properties"
+                  path: "./jenkins_home/log.properties"
+
+          # Secrets
+          - name: "jenkins_password"
+            secret:
+              secretName: "jenkins_password"
+          - name: "jenkins_https_pem"
+            secret:
+              secretName: "jenkins_https_pem"
+          - name: "jenkins_https_key"
+            secret:
+              secretName: "jenkins_https_key"
+
+
