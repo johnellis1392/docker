@@ -4,13 +4,16 @@ services:
   app:
     build: .
     environment:
-      DISPLAY: unix$DISPLAY
+      # DISPLAY: unix$DISPLAY
+      # DISPLAY: $DISPLAY
+      DISPLAY: "192.168.59.3:0"
+    # privileged: true
 
     # devices:
-    #  - /dev/dri
+    #   - /dev/dri
 
-    volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix
+      # volumes:
+      # - /tmp/.X11-unix:/tmp/.X11-unix
 
     entrypoint:
       - glxgears
