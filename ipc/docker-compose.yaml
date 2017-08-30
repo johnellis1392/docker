@@ -1,0 +1,108 @@
+version: '3.3'
+
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - 3000:80/tcp
+
+    networks:
+      - api
+    configs:
+      - source: nginx_conf
+        target: /etc/nginx/nginx.conf
+        uid: '0'
+        gid: '0'
+        mode: 0440
+
+    
+  rabbitmq:
+    image: rabbitmq:latest
+    networks:
+      - mq
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+
+    deploy:
+      mode: replicated
+      replicas: 3
+      endpoint_mode: dnsrr
+
+    environment:
+      PORT: 3000
+      IMAGE_DIR: /var/worker/images
+
+    volumes:
+      - type: volume
+        source: images
+        target: /var/worker/images
+        read_only: false
+        volume:
+          nocopy: true
+
+    ipc: 'container:rabbitmq'
+    networks:
+      - mq
+
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+
+    deploy:
+      mode: replicated
+      replicas: 3
+      endpoint_mode: dnsrr
+      restart_policy:
+        condition: on-failure
+        delay: 1s
+        max_attempts: 3
+        window: 15s
+      update_config:
+        parallelism: 3
+        delay: 1s
+        failure_action: pause
+        monitor: 1m
+        max_failure_ratio: 3
+
+    container_name: c2
+    environment:
+      PORT: 3000
+      IMAGE_DIR: /var/api/images
+
+    volumes:
+      - type: volume
+        source: images
+        target: /var/api/images
+        read_only: true
+        volume:
+          nocopy: true
+
+    # Reuse rabbitmq's ipc namespace
+    ipc: 'container:rabbitmq'
+    networks:
+      - api
+      - mq
+
+
+volumes:
+  images:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ./images
+      # device: ${PWD}/images
+
+networks:
+  mq:
+  api:
+
+configs:
+  nginx_conf:
+    file: ./nginx/nginx.conf
+
